@@ -13,14 +13,14 @@ def load_config():
 
 
 # Auswerte Funktion
-def pick_values(sensor):
-    # Sensordaten f  r SDS011 abfragen und Maximum pr  fen
+def get_pm10_value(sensor_url):
+    # Sensordaten für SDS011 abfragen und Maximum prüfen
     # dazu die api von luftdaten.info nutzen
-    # Peter F  rle @Alpensichtung Hotzenwald 04/2017
-    r = requests.get(sensor)
+    # Peter Fürle @Alpensichtung Hotzenwald 04/2017
+    r = requests.get(sensor_url)
     json_string = r.text
     parsed_json = json.loads(json_string)
-    # pretty print um   berhaupt zu verstehen was da passiert
+    # pretty print um überhaupt zu verstehen was da passiert
     # print json.dumps(parsed_json, sort_keys=True, indent=4, separators=(',',':'))
     l = len(parsed_json)
     if l:
@@ -29,7 +29,7 @@ def pick_values(sensor):
             # in der Regel ist der erste Wert der PM10
             result = (parsed_json[l - 1]['sensordatavalues'][0]['value'])
             return result
-    # Falls Json unvollst  ndig ist
+    # Falls Json unvollständig ist
     return (0)
 
 
@@ -41,11 +41,11 @@ for sensor in sensors:
     print(sensor)
     sensor_url = 'http://api.luftdaten.info/static/v1/sensor/{}/'.format(sensor)
     # Liste erzeugen mit den Werten, ok float() ist nicht ganz sauber...
-    maxlist.append(float(pick_values(sensor_url)))
+    maxlist.append(float(get_pm10_value(sensor_url)))
 
-# welches ist der h  chste Wert ?
+# welches ist der höchste Wert ?
 maxwert = max(maxlist)
-# zu welchem Sensor aus der Liste sd geh  rt der H  chstwert ?
+# zu welchem Sensor aus der Liste sd gehört der Höchstwert ?
 maxsensor = sensors[maxlist.index(maxwert)]
 
 tweet = ' Aktuell liegen keine Grenzwert- Überschreitungen in Freiburg vor '
@@ -54,7 +54,7 @@ alarm = False
 # hier kannst du den Maxwert anpassen
 if maxwert > config["max_value"]:
     tweet = 'Achtung Freiburg! Feinstaubwerte hoch - Sensor: {} ist bei PM10 {} µg/m³'.format(maxsensor, maxwert)
-    # hier den Tweet ausl  sen
+    # hier den Tweet auslösen
     alarm = True
 
 print tweet
