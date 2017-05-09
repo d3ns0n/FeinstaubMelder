@@ -1,0 +1,20 @@
+{
+  "tokens": {
+    "consumer_key": "your consumer key goes here",
+    "consumer_secret": "your consumer secret goes here",
+    "access_key": "your access key goes here",
+    "access_secret": "your access secret goes here"
+  },
+  "sensors": [
+    533,
+    1224,
+    1288,
+    928,
+    1210,
+    1264,
+    1685,
+    1615,
+    1667
+  ],
+  "max_value": 50
+}
