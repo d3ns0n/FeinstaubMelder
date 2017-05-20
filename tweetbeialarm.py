@@ -58,20 +58,22 @@ def post_tweet(tweet_text):
     api.update_status(status=tweet_text)
 
 
-config = load_config()
+def iterate_sensors(sensors):
+    maxlist = {}
+    for sensor in sensors:
+        # Sensor und PM10 Wert als Key-Value Pair im Dictionary speichern
+        maxlist[sensor] = get_pm10_value(sensor)
 
-sensors = config["sensors"]
-maxlist = {}
-for sensor in sensors:
-    # Sensor und PM10 Wert als Key-Value Pair im Dictionary speichern
-    maxlist[sensor] = get_pm10_value(sensor)
+    # das Key-Value Pair mit dem höchsten Sensorwert ermitteln
+    maxsensor = max(maxlist.iteritems(), key=operator.itemgetter(1))
 
-# das Key-Value Pair mit dem höchsten Sensorwert ermitteln
-maxsensor = max(maxlist.iteritems(), key=operator.itemgetter(1))
+    # hier kannst du den Maxwert anpassen
+    if maxsensor[1] > config["max_value"]:
+        tweet = 'Achtung Freiburg! Feinstaubwerte hoch - Sensor: {0} ist bei PM10 {1} µg/m³' \
+            .format(maxsensor[0], maxsensor[1])
+        # hier den Tweet auslösen
+        post_tweet(tweet)
 
-# hier kannst du den Maxwert anpassen
-if maxsensor[1] > config["max_value"]:
-    tweet = 'Achtung Freiburg! Feinstaubwerte hoch - Sensor: {0} ist bei PM10 {1} µg/m³' \
-        .format(maxsensor[0], maxsensor[1])
-    # hier den Tweet auslösen
-    post_tweet(tweet)
+if __name__ == '__main__':
+    config = load_config()
+    iterate_sensors(config["sensors"])
