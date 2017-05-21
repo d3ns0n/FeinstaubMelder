@@ -17,6 +17,30 @@ class LoadConfigTest(unittest.TestCase):
         assert args == ('config.json',)
 
 
+class GetPm10ValueTest(unittest.TestCase):
+    sensor_id = 1337
+
+    @mock.patch('tweetbeialarm.perform_request')
+    @mock.patch('tweetbeialarm.parse_response')
+    def test_get_pm10_value_should_request_correct_sensor(self, parse_response_function, perform_request_function):
+        tweetbeialarm.get_pm10_value(self.sensor_id)
+
+        args, kwargs = perform_request_function.call_args
+        assert args == (self.sensor_id,)
+
+    @mock.patch('tweetbeialarm.perform_request')
+    @mock.patch('tweetbeialarm.parse_response')
+    def test_get_pm10_value_should_handle_response_correct(self, parse_response_function, perform_request_function):
+        response = mock.MagicMock
+
+        perform_request_function.return_value = response
+
+        tweetbeialarm.get_pm10_value(self.sensor_id)
+
+        args, kwargs = parse_response_function.call_args
+        assert args == (response,)
+
+
 class PerformRequestTest(unittest.TestCase):
     sensor_id = 1337
 
