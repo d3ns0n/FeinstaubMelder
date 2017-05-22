@@ -32,7 +32,7 @@ def parse_response(response):
             # in der Regel ist der erste Wert der PM10
             result = (parsed_json[l - 1]['sensordatavalues'][0]['value'])
             return decimal.Decimal(result)
-    # Falls Json unvollständig ist
+    # Falls Json leer ist
     return 0
 
 
