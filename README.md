@@ -1,4 +1,4 @@
-# FeinstaubMelder
+# FeinstaubMelder [![Build Status](https://travis-ci.org/d3ns0n/FeinstaubMelder.svg?branch=master)](https://travis-ci.org/d3ns0n/FeinstaubMelder)
 Fragt bestimmte Sensoren ab und wenn diese über 50 y/m3 sind, dann twittert er eine Feinstaub Warnung
 
 # Einige Hinweise:
