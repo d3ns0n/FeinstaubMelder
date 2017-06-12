@@ -1,72 +1,79 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# depends: python-requests
 
+import decimal
 import json
+import operator
 
 import requests
 import tweepy
 
 
-# Auswerte Funktion
-def pick_values(sensor):
-    # Sensordaten f  r SDS011 abfragen und Maximum pr  fen
-    # dazu die api von luftdaten.info nutzen
-    # Peter F  rle @Alpensichtung Hotzenwald 04/2017
-    r = requests.get(sensor)
-    json_string = r.text
-    parsed_json = json.loads(json_string)
-    # pretty print um   berhaupt zu verstehen was da passiert
-    # print json.dumps(parsed_json, sort_keys=True, indent=4, separators=(',',':'))
+def load_config():
+    with open('config.json') as json_data_file:
+        return json.load(json_data_file)
+
+
+def perform_request(sensor):
+    response = requests.get('http://api.luftdaten.info/static/v1/sensor/{0}/'.format(sensor))
+    if response.status_code and not 200 <= response.status_code < 300:
+        # Request konnte nicht erfolgreich ausgeführt werden
+        print('Luftdaten API error response: status code = {0}'.format(response.status_code))
+        return 0
+    return response
+
+
+def parse_response(response):
+    parsed_json = json.loads(response.text)
     l = len(parsed_json)
     if l:
         a = len(parsed_json[l - 1]['sensordatavalues'])
         if a:
             # in der Regel ist der erste Wert der PM10
             result = (parsed_json[l - 1]['sensordatavalues'][0]['value'])
-            return (result)
-    # Falls Json unvollst  ndig ist
-    return (0)
+            return decimal.Decimal(result)
+    # Falls Json leer ist
+    return 0
 
 
-# Freiburger Sensornummern, einfach neu dazugekommene hier an die Liste dranh  ngen
-sd = [533, 1224, 1288, 928, 1210, 1264, 1685, 1615, 1667]
-maxlist = []
-for x in sd:
-    print(x)
-    url = 'http://api.luftdaten.info/static/v1/sensor/' + str(x) + '/'
-    # Liste erzeugen mit den Werten, ok float() ist nicht ganz sauber...
-    maxlist.append(float(pick_values(url)))
+# Auswerte Funktion
+def get_pm10_value(sensor):
+    # Sensordaten für SDS011 abfragen und Maximum prüfen
+    # dazu die api von luftdaten.info nutzen
+    # Peter Fürle @Alpensichtung Hotzenwald 04/2017
+    response = perform_request(sensor)
+    return parse_response(response)
 
-# welches ist der h  chste Wert ?
-maxwert = max(maxlist)
-# zu welchem Sensor aus der Liste sd geh  rt der H  chstwert ?
-sensor = sd[maxlist.index(maxwert)]
 
-tweet = ' Aktuell liegen keine Grenzwert- Überschreitungen in Freiburg vor '
-alarm = False
+def post_tweet(tweet_text):
+    tokens = config["tokens"]
+    # OAuth process, using the keys and tokens
+    auth = tweepy.OAuthHandler(tokens["consumer_key"], tokens["consumer_secret"])
+    auth.set_access_token(tokens["access_key"], tokens["access_secret"])
 
-# hier kannst du den Maxwert anpassen
-if maxwert > 5:
-    tweet = 'Achtung Freiburg! Feinstaubwerte hoch - Sensor: {} ist bei PM10 {} µg/m³'.format(sensor, maxwert)
-    # hier den Tweet ausl  sen
-    alarm = True
+    # Creation of the actual interface, using authentication
+    api = tweepy.API(auth)
 
-print tweet
+    # twittern nur Text
+    api.update_status(status=tweet_text)
 
-# acess tokens
-CONSUMER_KEY = 'x'
-CONSUMER_SECRET = 'x'
-ACCESS_KEY = 'x'
-ACCESS_SECRET = 'x'
 
-# OAuth process, using the keys and tokens
-auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
-auth.set_access_token(ACCESS_KEY, ACCESS_SECRET)
+def iterate_sensors(sensors):
+    maxlist = {}
+    for sensor in sensors:
+        # Sensor und PM10 Wert als Key-Value Pair im Dictionary speichern
+        maxlist[sensor] = get_pm10_value(sensor)
 
-# Creation of the actual interface, using authentication
-api = tweepy.API(auth)
+    # das Key-Value Pair mit dem höchsten Sensorwert ermitteln
+    maxsensor = max(maxlist.iteritems(), key=operator.itemgetter(1))
 
-# twittern nur Text
-if alarm:
-    api.update_status(status=tweet)
+    # hier kannst du den Maxwert anpassen
+    if maxsensor[1] > config["max_value"]:
+        tweet = 'Achtung Freiburg! Feinstaubwerte hoch - Sensor: {0} ist bei PM10 {1} µg/m³' \
+            .format(maxsensor[0], maxsensor[1])
+        # hier den Tweet auslösen
+        post_tweet(tweet)
+
+if __name__ == '__main__':
+    config = load_config()
+    iterate_sensors(config["sensors"])
